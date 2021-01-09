@@ -7,7 +7,7 @@
 start(_Type, _Args) ->
 	Dispatch = cowboy_router:compile([
 		{'_', [
-			{"/room", char_room_handler, []},
+			{"/room", chat_room_handler, []},
 			{"/user", user_account_handler, []},
 			{"/", welcome_page_handler, []}
 			]
