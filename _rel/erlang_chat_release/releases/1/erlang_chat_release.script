@@ -1,5 +1,5 @@
 %% coding: utf-8
-%% script generated at {2021,1,9} {19,26,17}
+%% script generated at {2021,1,9} {21,16,34}
 {script,
     {"erlang_chat_release","1"},
     [{preLoaded,
