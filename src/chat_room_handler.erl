@@ -2,43 +2,54 @@
 
 -export([init/2]).
 
--define(ROOM_DIRECTORY, "rooms/").
-
--define(ROOM_FILE_ENDING, ".room").
-
-init(Req0, State) ->
+init(Req0,
+     State = #{room_manager_pid := RoomManagerPID}) ->
     #{room := RoomBinary, user := UserBinary,
       message := MessageBinary} =
-        cowboy_req:match_qs([room, user, {message, [], none}],
+        cowboy_req:match_qs([room, user, {message, [], <<"">>}],
                             Req0),
     Room = erlang:binary_to_list(RoomBinary),
     User = erlang:binary_to_list(UserBinary),
+    Message = erlang:binary_to_list(MessageBinary),
+    RequsetObject = #{room_manager_pid => RoomManagerPID,
+                      room => Room, user => User, message => Message,
+                      request => Req0, state => State},
+    check_chain(RequsetObject),
+    reply(RequsetObject).
 
-    %FileExisted= filelib:is_regular( User++".room"),
-    %erlang:display(FileExisted),
-    write_user_to_room(User, Room),
-    Req = cowboy_req:reply(200,
-                           #{<<"content-type">> => <<"text/plain">>},
-                           <<"Hello from chat room!\r\n">>,
-                           Req0),
-    {ok, Req, State}.
+check_chain(RequsetObject) ->
+    checkRoom(RequsetObject).
 
-write_user_to_room(User, Room) ->
-    erlang:display((?ROOM_DIRECTORY) ++
-                       Room ++ (?ROOM_FILE_ENDING)),
-    case filelib:is_file(Room ++ ".room") of
-        true -> erlang:display("file exists");
-        false -> erlang:display("no such file")
-    end.
+checkRoom(RequsetObject= #{room:=Room}) ->
+    RoomExists = room_manager:room_exist(Room),
+    checkRoom(RoomExists,RequsetObject).
 
-    
+checkRoom(false, RequsetObject = #{room_manager_pid:=RoomManagerPID,room:=Room}) ->
+    room_manager:create_room_message(RoomManagerPID, Room),
+    checkRoom(RequsetObject);
+checkRoom(true, RequsetObject)->
+    checkUserInRoom(RequsetObject).
 
-% if no room file:
-%    create room file
-% open room file
-% if not user in room file
-%    add user to file
-% if message
-%    add user says: ""
-% send  file to user
+checkUserInRoom(RequsetObject= #{user:=User,room:=Room}) ->
+    UserInRoom = room_manager:user_in_room(User, Room),
+    checkUserInRoom(UserInRoom,RequsetObject).
 
+checkUserInRoom(false, _RequsetObject=#{user:=User,room:=Room}) ->
+    room_manager:add_user_to_room(User, Room);
+checkUserInRoom(true, RequsetObject) ->
+    checkMessage(RequsetObject).
+
+checkMessage(_RequsetObject=#{message:=""}) -> ok;
+checkMessage(_RequsetObject=#{room_manager_pid:=RoomManagerPID,room:=Room,message:=Message,user:=User}) ->
+    room_manager:write_message_to_room_action(RoomManagerPID, Room, Message, User),ok.
+
+
+reply(_RequsetObject=#{room_manager_pid:=RoomManagerPID,request:=Req,room:=Room,state:=State}) ->
+    ChatLog = room_manager:read_room_message(RoomManagerPID,
+                                             Room),
+    Response = erlang:list_to_binary(ChatLog),
+    Request = cowboy_req:reply(200,
+                               #{<<"content-type">> => <<"text/plain">>},
+                               Response,
+                               Req),
+    {ok, Request, State}.

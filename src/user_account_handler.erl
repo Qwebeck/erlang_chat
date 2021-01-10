@@ -14,7 +14,7 @@ get_user_info(UserManagerPID, User, Password) ->
         wrong_credentials -> {wrong_credentials, []}
     end.
 
-reply(ok, _UserData=#{user := UserName }, Req, State) -> 
+reply(ok, _UserData=#{user := UserName}, Req, State) -> 
     Content = io_lib:format("Hello ~s!~n", [UserName]), 
     Res = cowboy_req:reply(200,
     #{<<"content-type">> => <<"text/plain">>},
@@ -27,3 +27,4 @@ reply(wrong_credentials, _,Req, State) ->
     <<"Wrong password!\n">>,
     Req),
     {ok, Res, State}.
+

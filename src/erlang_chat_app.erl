@@ -6,7 +6,9 @@
 
 start(_Type, _Args) ->
 	UserManager = spawn(user_manager, user_manager, []),
-	InitialState = #{user_manager_pid => UserManager},
+	RoomManager = spawn(room_manager, room_manager, []),
+
+	InitialState = #{user_manager_pid => UserManager, room_manager_pid=>RoomManager},
 	Dispatch = cowboy_router:compile([
 		{'_', [
 			{"/room", chat_room_handler, InitialState},

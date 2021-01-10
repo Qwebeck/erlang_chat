@@ -1,0 +1,15 @@
+%% coding: utf-8
+[{release,"erlang_chat_release","1","10.7.2.1",
+          [{kernel,"6.5.2.1","./lib/kernel-6.5.2.1"},
+           {stdlib,"3.12.1","./lib/stdlib-3.12.1"},
+           {crypto,"4.6.5","./lib/crypto-4.6.5"},
+           {cowlib,"2.7.3","./lib/cowlib-2.7.3"},
+           {asn1,"5.0.12","./lib/asn1-5.0.12"},
+           {public_key,"1.7.2","./lib/public_key-1.7.2"},
+           {ssl,"9.6.2","./lib/ssl-9.6.2"},
+           {ranch,"1.7.1","./lib/ranch-1.7.1"},
+           {cowboy,"2.6.3","./lib/cowboy-2.6.3"},
+           {erlang_chat,"0.1.0","./lib/erlang_chat-0.1.0"},
+           {sasl,"3.4.2","./lib/sasl-3.4.2"},
+           {runtime_tools,"1.14","./lib/runtime_tools-1.14"}],
+          permanent}].
