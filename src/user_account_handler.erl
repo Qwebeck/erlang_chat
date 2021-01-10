@@ -1,5 +1,5 @@
 -module(user_account_handler).
--export([init/2]).
+-export([init/2,parse_user_rooms/1,create_filename/1]).
 
 init(Req, State) -> 
     #{name := User, pass := Password } = cowboy_req:match_qs([name, pass], Req),
@@ -39,9 +39,6 @@ parse_user_rooms(Device) ->
         eof  -> [];
         Line -> Line ++ parse_user_rooms(Device)
     end.
-
-
-
 create_new_user(UserName, Password) ->    
     Filename = create_filename(UserName),
     filelib:ensure_dir(Filename),
@@ -52,9 +49,8 @@ create_new_user(UserName, Password) ->
 create_filename(User) ->
     io_lib:format("./users/~s.txt", [User]).
 
-
-reply(ok, _UserData=#{user := UserName }, Req, State) -> 
-    Content = io_lib:format("Hello ~s!~n", [UserName]), 
+reply(ok, _UserData=#{user := UserName,rooms:=Rooms}, Req, State) -> 
+    Content = io_lib:format("Hello ~s!~n ~s", [UserName,Rooms]), 
     Res = cowboy_req:reply(200,
     #{<<"content-type">> => <<"text/plain">>},
     list_to_binary(Content),
@@ -66,3 +62,4 @@ reply(wrong_credentials, _,Req, State) ->
     <<"Wrong password!\n">>,
     Req),
     {ok, Res, State}.
+
