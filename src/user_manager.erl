@@ -68,5 +68,3 @@ parse(user_rooms, File) ->
         eof  -> [];
         Line -> Line ++ parse(user_rooms, File)
     end.
-
-
