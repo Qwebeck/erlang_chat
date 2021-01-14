@@ -9,20 +9,15 @@
          read_room_message/2,
          room_exist/1,
          room_manager/0,
-         user_in_room/2,
          write_message_to_room_action/4]).
 
 add_user_to_room(User, Room) ->
     erlang:display("adding user to room"),
+    UserManagerPID = whereis(user_manager_pid),
+    {ok, _} = user_manager:add_user_chat_room(UserManagerPID, User, Room),
     {ok, File} = file:open(room_file(Room), [append]),
     io:format(File, "~s~n", [User]),
     erlang:display("added user to room").
-
-user_in_room(User, Room) ->
-    %FileName = user_account_handler:create_filename(User),
-    % Rooms = user_account_handler:parse_user_rooms(FileName),
-    % erlang:display(Rooms),
-    true.
 
 room_file(Room) ->
     (?ROOM_DIRECTORY) ++ Room ++ (?ROOM_FILE_ENDING).

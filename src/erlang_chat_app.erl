@@ -7,14 +7,13 @@
 start(_Type, _Args) ->
 	UserManager = spawn(user_manager, user_manager, []),
 	RoomManager = spawn(room_manager, room_manager, []),
-
+	register(user_manager_pid, UserManager),
 	InitialState = #{user_manager_pid => UserManager, room_manager_pid=>RoomManager},
 	Dispatch = cowboy_router:compile([
 		{'_', [
 			{"/room", chat_room_handler, InitialState},
-			{"/user", user_account_handler, InitialState},
-			{"/", welcome_page_handler, InitialState}
-			]
+			{"/user", user_account_handler, InitialState}
+		]
 			}]),
 	{ok, _} = cowboy:start_clear(http_listener,
 		[{port, 8080}],
