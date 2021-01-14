@@ -12,9 +12,10 @@ init(Req,State = #{user_manager_pid := UserManagerPID}) ->
 
 get_user_info(UserManagerPID, User, Password) ->
     {Status, UserData} =
-        user_manager:get_user_data(UserManagerPID,
+        user_manager:get_user_data_action(UserManagerPID,
                                    User,
                                    Password),
+    
     case Status of
         ok -> {ok, UserData};
         wrong_credentials -> {wrong_credentials, []}

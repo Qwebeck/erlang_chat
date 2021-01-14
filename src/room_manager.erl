@@ -4,20 +4,11 @@
 
 -define(ROOM_FILE_ENDING, ".room").
 
--export([add_user_to_room/2,
-         create_room_message/2,
+-export([create_room_message/2,
          read_room_message/2,
          room_exist/1,
          room_manager/0,
          write_message_to_room_action/4]).
-
-add_user_to_room(User, Room) ->
-    erlang:display("adding user to room"),
-    UserManagerPID = whereis(user_manager_pid),
-    {ok, _} = user_manager:add_user_chat_room(UserManagerPID, User, Room),
-    {ok, File} = file:open(room_file(Room), [append]),
-    io:format(File, "~s~n", [User]),
-    erlang:display("added user to room").
 
 room_file(Room) ->
     (?ROOM_DIRECTORY) ++ Room ++ (?ROOM_FILE_ENDING).
@@ -26,15 +17,16 @@ write_message_to_room(Room, Message, User) ->
     {ok, File} = file:open(room_file(Room), [append]),
     io:format(File, "~s says:\"~s\"~n", [User, Message]).
 
-read_room(Room) ->
-     readlines(room_file(Room)).
-    
+read_room(Room) -> readlines(room_file(Room)).
 
 readlines(FileName) ->
     {ok, Data} = file:read_file(FileName),
     binary:split(Data, [<<"\n">>], [global]).
 
-room_exist(Room) -> filelib:is_file(room_file(Room)).
+room_exist(Room) -> 
+   Result= filelib:is_file(room_file(Room)),
+   erlang:display(Result),
+   Result.
 
 create_room(Room) ->
     FileName = room_file(Room),

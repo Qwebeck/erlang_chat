@@ -1,35 +1,36 @@
 -module(user_manager).
--export([create_user/2, get_user_data/3, add_user_chat_room/3, user_manager/0]).
+-export([create_user_action/2, get_user_data_action/3, add_user_chat_room_action/3, user_manager/0]).
 
-create_user(UserManagerPID, UserData) ->
-    UserManagerPID ! {self(), {create_user, UserData}},
+create_user_action(UserManagerPID, UserData) ->
+    UserManagerPID ! {self(), {create_new_user, UserData}},
     receive
         {UserManagerPID, Msg} -> Msg
     end.
 
-get_user_data(UserManagerPID, UserName, UserPassword) -> 
-    UserManagerPID ! {self(), {get_user_data, UserName, UserPassword}},
+get_user_data_action(UserManagerPID, UserName, UserPassword) -> 
+    UserManagerPID ! {self(), {get_user, UserName, UserPassword}},
     receive
         {UserManagerPID, UserData} -> UserData
     end.
 
-add_user_chat_room(UserManagerPID, UserName, ChatRoomName) -> 
-    UserManagerPID ! {self(), {add_user_char_room, UserName, ChatRoomName}},
+add_user_chat_room_action(UserManagerPID, UserName, ChatRoomName) -> 
+    erlang:display("add_user_chat_room_action"),
+    UserManagerPID ! {self(), {add_chat_room_to_user, UserName, ChatRoomName}},
     receive
         {UserManagerPID, UpdatedUserData} -> UpdatedUserData
     end.
 
 user_manager() ->
     receive
-        {From, {create_user, UserData}} ->
+        {From, {create_new_user, UserData}} ->
             NewUser = create_new_user(UserData),
             From ! {self(), NewUser},
             user_manager();
-        {From, {get_user_data, UserName, UserPassword}} -> 
+        {From, {get_user, UserName, UserPassword}} -> 
             ParsedUserData = get_user(UserName, UserPassword),
             From ! { self(), ParsedUserData },
             user_manager();
-        {From, {add_user_char_room, UserName, ChatRoomName}} ->
+        {From, {add_chat_room_to_user, UserName, ChatRoomName}} ->
             UpdatedUser = add_chat_room_to_user(UserName, ChatRoomName),
             From ! { self(), UpdatedUser },
             user_manager();        
@@ -60,6 +61,8 @@ add_chat_room_to_user(UserName, NewRoom) ->
     #{rooms := ExistingRooms } = UserObject,
     IsMember = lists:member(NewRoom, ExistingRooms),
     {ok, UpdatedUser} = update_user_rooms(IsMember, UserObject, NewRoom),
+    erlang:display("udpated User"),
+    erlang:display(UpdatedUser),
     user_file_manager:save_user(to_file, UpdatedUser),
     {ok, UpdatedUser}.
 
