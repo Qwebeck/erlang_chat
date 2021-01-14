@@ -47,9 +47,10 @@ checkMessage(_RequsetObject=#{room_manager_pid:=RoomManagerPID,room:=Room,messag
 reply(_RequsetObject=#{room_manager_pid:=RoomManagerPID,request:=Req,room:=Room,state:=State}) ->
     ChatLog = room_manager:read_room_message(RoomManagerPID,
                                              Room),
-    Response = erlang:list_to_binary(ChatLog),
+                                             
+    Response = jsx:encode(#{<<"chatLog">>=>ChatLog}),
     Request = cowboy_req:reply(200,
-                               #{<<"content-type">> => <<"text/plain">>},
+                               #{<<"content-type">> => <<"application/json">>},
                                Response,
                                Req),
     {ok, Request, State}.

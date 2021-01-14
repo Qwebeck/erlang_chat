@@ -32,14 +32,12 @@ write_message_to_room(Room, Message, User) ->
     io:format(File, "~s says:\"~s\"~n", [User, Message]).
 
 read_room(Room) ->
-    {Status, File} = file:read_file(room_file(Room)),
-    case Status of
-        ok ->
-            Content = unicode:characters_to_list(File),
-            file:close(File),
-            Content;
-        error -> error
-    end.
+     readlines(room_file(Room)).
+    
+
+readlines(FileName) ->
+    {ok, Data} = file:read_file(FileName),
+    binary:split(Data, [<<"\n">>], [global]).
 
 room_exist(Room) -> filelib:is_file(room_file(Room)).
 
