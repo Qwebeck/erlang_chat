@@ -2,8 +2,7 @@
 
 -export([init/2]).
 
-init(Req,
-     State = #{user_manager_pid := UserManagerPID}) ->
+init(Req,State = #{user_manager_pid := UserManagerPID}) ->
     #{name := User, pass := Password} =
         cowboy_req:match_qs([name, pass], Req),
     {Status, Data} = get_user_info(UserManagerPID,
@@ -31,7 +30,11 @@ reply(ok, _UserData = #{user := UserName}, Req,
                            Content,
                            Req),
     {ok, Res, State};
-reply(wrong_credentials, _, Req, State) ->
+reply(ok, _UserData=#{user := UserName}, Req, State) -> 
+    UserDataWithRooms = map:merge(_UserData, #{rooms => []}),
+    reply(ok, UserDataWithRooms, Req, State);
+
+reply(wrong_credentials, _,Req, State) -> 
     Res = cowboy_req:reply(403,
                            #{<<"content-type">> => <<"text/plain">>},
                            <<"Wrong password!\n">>,
