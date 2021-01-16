@@ -56,8 +56,6 @@ create_new_user(UserData) ->
 add_chat_room_to_user(UserName, NewRoom) ->
     {ok, UserObject} = user_file_manager:read_user(from_file, UserName),
     #{rooms := ExistingRooms } = UserObject,
-    erlang:display(ExistingRooms),
-    erlang:display(NewRoom),
     IsMember = lists:member(NewRoom, ExistingRooms),
     {ok, UpdatedUser} = update_user_rooms(IsMember, UserObject, NewRoom),
     user_file_manager:save_user(to_file, UpdatedUser),
@@ -70,12 +68,12 @@ update_user_rooms(false, UserObject, NewRoom) ->
 update_user_rooms(true, UserObject, _) -> {ok, UserObject}.
 
 % Checking user credentials
-check_if_authorized(UserPassword, RequestedUserObject) -> 
+check_if_authorized(UserPassword, RequestedUserObject = #{user := UserName}) -> 
     #{password := RequiredPassword} = RequestedUserObject,        
     IsPasswordMatch = string:equal(RequiredPassword, UserPassword),
     if 
         IsPasswordMatch ->
             {ok, maps:remove(password, RequestedUserObject)};
         true -> 
-            {wrong_credentials, []}
+            {wrong_credentials, #{user => UserName}}
     end.

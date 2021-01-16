@@ -12,14 +12,13 @@
          write_message_to_room_action/4]).
 
 add_user_to_room(User, Room) ->
-    erlang:display("adding user to room"),
     {ok, _} = user_supervisor:add_user_chat_room(User, Room),
     {ok, File} = file:open(room_file(Room), [append]),
-    io:format(File, "~s~n", [User]),
-    erlang:display("added user to room").
+    io:format(File, "~s~n", [User]).
 
 room_file(Room) ->
-    (?ROOM_DIRECTORY) ++ Room ++ (?ROOM_FILE_ENDING).
+    RoomString = binary:bin_to_list(Room),
+    (?ROOM_DIRECTORY) ++ RoomString ++ (?ROOM_FILE_ENDING).
 
 write_message_to_room(Room, Message, User) ->
     {ok, File} = file:open(room_file(Room), [append]),

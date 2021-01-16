@@ -15,7 +15,7 @@ save_user(to_file, UserData = #{ user := UserName }) ->
     {ok};
 
 save_user(IODevice, #{user := UserName, password := Password, rooms := Rooms}) -> 
-    FormattedRooms = string:join(Rooms, io_lib:nl()),
+    FormattedRooms = [[X,"\n"] || X <- Rooms],
     io:format(IODevice, "~s~n~s~n~s", [UserName, Password, FormattedRooms]), 
     {ok};     
 save_user(IODevice, UserData = #{user := UserName, password := Password}) ->
@@ -31,18 +31,22 @@ read_user(from_file, UserName) ->
     case Status of
         ok -> try parse(user_object, File) after file:close(File)
             end;
-        error -> {user_not_exists, []}
+        error -> {user_not_exists, #{user => UserName}}
     end.
 
 parse(user_object, IODevice) -> 
     UserName = string:strip(io:get_line(IODevice, ""), both, $\n),
     Password = string:strip(io:get_line(IODevice, ""), both, $\n),
     Rooms = parse(user_rooms, IODevice),
-    {ok, #{user => binary:list_to_bin(UserName), password => binary:list_to_bin(Password), rooms => Rooms}};
+    {ok, #{user => binary:list_to_bin(UserName), password => binary:list_to_bin(Password), rooms =>  Rooms}};
 
 parse(user_rooms, IODevice) ->
     case io:get_line(IODevice, "") of
         eof  -> [];
-        Line -> string:strip(io:get_line(Line, ""), both, $\n) ++ parse(user_rooms, IODevice)
+        Line -> 
+            Stripped = string:strip(Line, both, $\n),
+            [binary:list_to_bin(Stripped)] ++ parse(user_rooms, IODevice)
     end.
 %
+
+

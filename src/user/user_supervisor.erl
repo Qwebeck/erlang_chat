@@ -76,8 +76,8 @@ user_supervisor(ProcessStorage) ->
             user_supervisor(UpdatedProcessStorage);
 
         {From, {on_user_created, {Status, UserData}}} ->
-            {ok, UpdateProcessStorage} = on_response_received(From, on_user_created, Status, UserData, ProcessStorage),
-            user_supervisor(UpdateProcessStorage);            
+            {ok, UpdatedProcessStorage} = on_response_received(From, on_user_created, Status, UserData, ProcessStorage),
+            user_supervisor(UpdatedProcessStorage);            
             
         {From, {get_user_data, ToUserName, UserPassword}} -> 
             {ok, {UserRequestHandler, UpdatedProcessStorage}} =  on_request_received(From, ToUserName, ProcessStorage),
@@ -85,19 +85,17 @@ user_supervisor(ProcessStorage) ->
             user_supervisor(UpdatedProcessStorage);
 
         {From, {on_user_data_received, {Status, UserData}}} ->
-            {ok, UpdateProcessStorage} = on_response_received(From, on_user_data_received, Status, UserData, ProcessStorage),
-            user_supervisor(UpdateProcessStorage);
+            {ok, UpdatedProcessStorage} = on_response_received(From, on_user_data_received, Status, UserData, ProcessStorage),
+            user_supervisor(UpdatedProcessStorage);
         
-    
         {From, {add_user_char_room, ToUserName, ChatRoomName}} ->
             {ok, {UserRequestHandler, UpdatedProcessStorage}} =  on_request_received(From, ToUserName, ProcessStorage),
             user_process:add_chat_room_to_user(UserRequestHandler, ToUserName, ChatRoomName),
             user_supervisor(UpdatedProcessStorage);
 
         {From, {on_chat_room_added, {Status, UserData}}} ->
-            erlang:display("Received"),
-            {ok, UpdateProcessStorage} = on_response_received(From, on_chat_room_added, Status, UserData, ProcessStorage),            
-            user_supervisor(UpdateProcessStorage);
+            {ok, UpdatedProcessStorage} = on_response_received(From, on_chat_room_added, Status, UserData, ProcessStorage),            
+            user_supervisor(UpdatedProcessStorage);
         terminate ->
             ok
         end.
@@ -110,6 +108,7 @@ on_request_received(FromProcess, UserName, ProcessStorage) ->
 on_response_received(UserProcessPid, MessageAtom, Status, UserData, ProcessStorage) -> 
     #{user := UserName} = UserData,
     on_response_received(UserProcessPid, MessageAtom, UserName, Status, UserData, ProcessStorage).    
+
 on_response_received(UserProcessPid, MessageAtom, UserName, Status, UserData, ProcessStorage) -> 
     user_process:terminate(UserProcessPid),
     Notification = {Status, {MessageAtom, UserData}},

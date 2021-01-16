@@ -4,13 +4,10 @@
 
 init(Req0,
      State = #{room_manager_pid := RoomManagerPID}) ->
-    #{room := RoomBinary, user := UserBinary,
-      message := MessageBinary} =
+    #{room := Room, user := User,
+      message := Message} =
         cowboy_req:match_qs([room, user, {message, [], <<"">>}],
                             Req0),
-    Room = erlang:binary_to_list(RoomBinary),
-    User = erlang:binary_to_list(UserBinary),
-    Message = erlang:binary_to_list(MessageBinary),
     RequestObject = #{room_manager_pid => RoomManagerPID,
                       room => Room, user => User, message => Message,
                       request => Req0, state => State},

@@ -41,7 +41,6 @@ remove_process_item(UserName, ProcessStorage) ->
 end.
 
 get_invokers(UserName, ProcessStorage) -> 
-    erlang:display(ProcessStorage),
     #{invokers := Invokers} = maps:get(UserName, ProcessStorage),
     Invokers.
 
