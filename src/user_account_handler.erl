@@ -1,14 +1,14 @@
 -module(user_account_handler).
 -export([init/2]).
 
-init(Req, State = #{user_manager_pid := UserManagerPID}) ->
+init(Req, State = #{user_supervisor_pid := UserManagerPID}) ->
     #{name := User, password := Password } = cowboy_req:match_qs([name, password], Req),
-    {Status, Data} = get_user_info(UserManagerPID, User, Password),
+    {Status, Data} = get_user_info(User, Password),
     reply(Status, Data, Req, State).
 
 
-get_user_info(UserManagerPID, User, Password) ->
-    {Status, UserData} = user_manager:get_user_data(UserManagerPID, User, Password),
+get_user_info(User, Password) ->
+    {Status, UserData} = user_supervisor:get_user_data(User, Password),
     case Status of
         ok -> {ok, UserData};
         wrong_credentials -> {wrong_credentials, []}
@@ -23,7 +23,7 @@ reply(ok, _UserData=#{user := UserName, rooms := Rooms}, Req, State) ->
     Req),
     {ok, Res, State};
 reply(ok, _UserData=#{user := UserName}, Req, State) -> 
-    UserDataWithRooms = map:merge(_UserData, #{rooms => []}),
+    UserDataWithRooms = maps:merge(_UserData, #{rooms => []}),
     reply(ok, UserDataWithRooms, Req, State);
 
 reply(wrong_credentials, _,Req, State) -> 

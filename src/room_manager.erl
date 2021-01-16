@@ -13,8 +13,7 @@
 
 add_user_to_room(User, Room) ->
     erlang:display("adding user to room"),
-    UserManagerPID = whereis(user_manager_pid),
-    {ok, _} = user_manager:add_user_chat_room(UserManagerPID, User, Room),
+    {ok, _} = user_supervisor:add_user_chat_room(User, Room),
     {ok, File} = file:open(room_file(Room), [append]),
     io:format(File, "~s~n", [User]),
     erlang:display("added user to room").
