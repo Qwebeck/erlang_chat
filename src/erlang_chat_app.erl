@@ -17,7 +17,8 @@ start(_Type, _Args) ->
 			}]),
 	{ok, _} = cowboy:start_clear(http_listener,
 		[{port, 8080}],
-		#{env =>#{dispatch => Dispatch}}),
+		#{env =>#{dispatch => Dispatch},
+	middlewares=>[cors_middleware,cowboy_router,cowboy_handler]}),
 	erlang_chat_sup:start_link().
 
 stop(_State) ->

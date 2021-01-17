@@ -16,10 +16,11 @@ get_user_info(User, Password) ->
 
 
 reply(ok, _UserData=#{user := UserName, rooms := Rooms}, Req, State) -> 
-    Content = io_lib:format("Hello ~s!~n ~s~n", [UserName, Rooms]), 
+    erlang:display(Rooms),
+    Content = jsx:encode(#{<<"user">> =>UserName,<<"loggedIn">> => true,<<"rooms">> => Rooms}),
     Res = cowboy_req:reply(200,
-    #{<<"content-type">> => <<"text/plain">>},
-    list_to_binary(Content),
+    #{<<"content-type">> => <<"application/json">>},
+    Content,
     Req),
     {ok, Res, State};
 reply(ok, _UserData=#{user := UserName}, Req, State) -> 
@@ -27,8 +28,9 @@ reply(ok, _UserData=#{user := UserName}, Req, State) ->
     reply(ok, UserDataWithRooms, Req, State);
 
 reply(wrong_credentials, _,Req, State) -> 
+    Content = jsx:encode(#{<<"loggedIn">> => false}),
     Res = cowboy_req:reply(403,
-    #{<<"content-type">> => <<"text/plain">>},
+    #{<<"content-type">> => <<"application/json">>},
     <<"Wrong password!\n">>,
-    Req),
+    Content),
     {ok, Res, State}.
