@@ -1,4 +1,4 @@
--module(room_manager).
+-module(room_process).
 
 -define(ROOM_DIRECTORY, "rooms/").
 
