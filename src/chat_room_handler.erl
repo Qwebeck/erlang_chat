@@ -4,52 +4,73 @@
 
 init(Req0,
      State = #{room_manager_pid := RoomManagerPID}) ->
-    #{room := RoomBinary, user := UserBinary,
-      message := MessageBinary} =
-        cowboy_req:match_qs([room, user, {message, [], <<"">>}],
+    #{room := Room, user := User, message := Message,
+      password := Password} =
+        cowboy_req:match_qs([room,
+                             user,
+                             password,
+                             {message, [], <<"">>}],
                             Req0),
-    Room = erlang:binary_to_list(RoomBinary),
-    User = erlang:binary_to_list(UserBinary),
-    Message = erlang:binary_to_list(MessageBinary),
-    RequsetObject = #{room_manager_pid => RoomManagerPID,
+    RequestObject = #{room_manager_pid => RoomManagerPID,
                       room => Room, user => User, message => Message,
-                      request => Req0, state => State},
-    check_chain(RequsetObject),
-    reply(RequsetObject).
+                      request => Req0, state => State, password => Password},
+    check_chain(RequestObject),
 
-check_chain(RequsetObject) ->
-    checkRoom(RequsetObject).
+    reply(RequestObject).
 
-checkRoom(RequsetObject= #{room:=Room}) ->
+check_chain(RequestObject) -> check_room(RequestObject).
+
+check_room(RequestObject = #{room := Room}) ->
     RoomExists = room_manager:room_exist(Room),
-    checkRoom(RoomExists,RequsetObject).
+    check_room(RoomExists, RequestObject).
 
-checkRoom(false, RequsetObject = #{room_manager_pid:=RoomManagerPID,room:=Room}) ->
+check_room(false,
+           RequestObject = #{room_manager_pid := RoomManagerPID,
+                             room := Room}) ->
     room_manager:create_room_message(RoomManagerPID, Room),
-    checkRoom(RequsetObject);
-checkRoom(true, RequsetObject)->
-    checkUserInRoom(RequsetObject).
+    check_room(RequestObject);
+check_room(true, RequestObject) ->
+    check_user_rooms(RequestObject).
 
-checkUserInRoom(RequsetObject= #{user:=User,room:=Room}) ->
-    UserInRoom = room_manager:user_in_room(User, Room),
-    checkUserInRoom(UserInRoom,RequsetObject).
+check_user_rooms(RequestObject = #{user := User,
+                                   password := Password}) ->
+    {Status, UserData} = user_supervisor:get_user_data(User,
+                                                       Password),
+    case Status of
+        ok -> check_user_rooms(UserData, RequestObject);
+        wrong_credentials -> {wrong_credentials, []}
+    end.
 
-checkUserInRoom(false, _RequsetObject=#{user:=User,room:=Room}) ->
-    room_manager:add_user_to_room(User, Room);
-checkUserInRoom(true, RequsetObject) ->
-    checkMessage(RequsetObject).
+check_user_rooms(_UserData = #{rooms := Rooms},
+                 RequestObject = #{room := Room}) ->
+    UserHasRoom = lists:member(Room, Rooms),
+    check_user_rooms(UserHasRoom, RequestObject);
+check_user_rooms(false,
+                 RequestObject = #{user := User, room := Room}) ->
+    room_manager:add_user_to_room(User, Room),
+    check_user_rooms(true, RequestObject);
+check_user_rooms(true, RequestObject) ->
+    check_message(RequestObject).
 
-checkMessage(_RequsetObject=#{message:=""}) -> ok;
-checkMessage(_RequsetObject=#{room_manager_pid:=RoomManagerPID,room:=Room,message:=Message,user:=User}) ->
-    room_manager:write_message_to_room_action(RoomManagerPID, Room, Message, User),ok.
+check_message(_RequestObject = #{message := ""}) -> ok;
+check_message(_RequestObject = #{room_manager_pid :=
+                                     RoomManagerPID,
+                                 room := Room, message := Message,
+                                 user := User}) ->
+    room_manager:write_message_to_room_action(RoomManagerPID,
+                                              Room,
+                                              Message,
+                                              User),
+    ok.
 
-
-reply(_RequsetObject=#{room_manager_pid:=RoomManagerPID,request:=Req,room:=Room,state:=State}) ->
+reply(_RequestObject = #{room_manager_pid :=
+                             RoomManagerPID,
+                         request := Req, room := Room, state := State}) ->
     ChatLog = room_manager:read_room_message(RoomManagerPID,
                                              Room),
-    Response = erlang:list_to_binary(ChatLog),
+    Response = jsx:encode(#{<<"chatLog">> => ChatLog}),
     Request = cowboy_req:reply(200,
-                               #{<<"content-type">> => <<"text/plain">>},
+                               #{<<"content-type">> => <<"application/json">>},
                                Response,
                                Req),
     {ok, Request, State}.

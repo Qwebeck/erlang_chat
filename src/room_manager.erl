@@ -9,45 +9,35 @@
          read_room_message/2,
          room_exist/1,
          room_manager/0,
-         user_in_room/2,
          write_message_to_room_action/4]).
 
 add_user_to_room(User, Room) ->
-    erlang:display("adding user to room"),
+    {ok, _} = user_supervisor:add_user_chat_room(User,
+                                                 Room),
     {ok, File} = file:open(room_file(Room), [append]),
-    io:format(File, "~s~n", [User]),
-    erlang:display("added user to room").
-
-user_in_room(User, Room) ->
-    %FileName = user_account_handler:create_filename(User),
-    % Rooms = user_account_handler:parse_user_rooms(FileName),
-    % erlang:display(Rooms),
-    true.
+    io:format(File, "~s joined the room!~n", [User]).
 
 room_file(Room) ->
-    (?ROOM_DIRECTORY) ++ Room ++ (?ROOM_FILE_ENDING).
+    RoomString = binary:bin_to_list(Room),
+    (?ROOM_DIRECTORY) ++ RoomString ++ (?ROOM_FILE_ENDING).
 
+write_message_to_room(_, <<"">>, _) -> ok;
 write_message_to_room(Room, Message, User) ->
     {ok, File} = file:open(room_file(Room), [append]),
     io:format(File, "~s says:\"~s\"~n", [User, Message]).
 
-read_room(Room) ->
-    {Status, File} = file:read_file(room_file(Room)),
-    case Status of
-        ok ->
-            Content = unicode:characters_to_list(File),
-            file:close(File),
-            Content;
-        error -> error
-    end.
+read_room(Room) -> readlines(room_file(Room)).
+
+readlines(FileName) ->
+    {ok, Data} = file:read_file(FileName),
+    binary:split(Data, [<<"\n">>], [global]).
 
 room_exist(Room) -> filelib:is_file(room_file(Room)).
 
 create_room(Room) ->
     FileName = room_file(Room),
     filelib:ensure_dir(FileName),
-    {ok, File} = file:open(FileName, [write]),
-    io:format(File, "", []),
+    file:open(FileName, [write]),
     ok.
 
 room_manager() ->
