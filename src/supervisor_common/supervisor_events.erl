@@ -7,11 +7,16 @@ on_request_received(FromProcessPID, ProcessName, ProcessStorage) ->
     {ok, {UserRequestHandler, UpdatedProcessStorage}}.
 
 
-on_response_received(TerminateChildProcess, ChildProcessPID, MessageAtom, ProcessName, Status, UserData, ProcessStorage) -> 
+on_response_received(TerminateChildProcess, ChildProcessPID, MessageAtom, ProcessName, Status, Data, ProcessStorage) -> 
+    erlang:display('here'),
+    QueueLength=erlang:process_info(ChildProcessPID, message_queue_len),
+    erlang:display(QueueLength),
     if 
-        erlang:process_info(ChildProcessPID, messages_queue_len) == 0
-            -> TerminateChildProcess(ChildProcessPID)
+        QueueLength == 0-> 
+            TerminateChildProcess(ChildProcessPID);
+        true ->
+            ok
     end,
-    Notification = {Status, {MessageAtom, UserData}},
+    Notification = {Status, {MessageAtom, Data}},
     supervisor_process_storage:notify_invokers(ProcessName, ProcessStorage, Notification),
     supervisor_process_storage:remove_process_item(ProcessName, ProcessStorage).
