@@ -53,7 +53,7 @@ add_user_chat_room(UserName, ChatRoomName) ->
     %% Makes request to user supervisor to add chat room with ChatRoomName to user with given UserName. 
     %% Blokcs calling process until new room is added. 
     UserManagerPID = whereis(user_supervisor_pid),
-    UserManagerPID ! {self(), {add_user_char_room, UserName, ChatRoomName}},
+    UserManagerPID ! {self(), {add_user_chat_room, UserName, ChatRoomName}},
     utils:await_response_to(UserManagerPID, on_chat_room_added).
 
 on_chat_room_added(Status, UserData) -> 
@@ -71,7 +71,7 @@ user_supervisor() ->
 user_supervisor(ProcessStorage) ->
     receive
         {From, {create_user, UserData = #{user := ToUserName}}} ->
-            {ok, {UserRequestHandler, UpdatedProcessStorage}} =  on_request_received(From, ToUserName, ProcessStorage),
+            {ok, {UserRequestHandler, UpdatedProcessStorage}} =  supervisor_events:on_request_received(From, ToUserName, ProcessStorage),
             user_process:create_user(UserRequestHandler),
             user_supervisor(UpdatedProcessStorage);
 
@@ -80,7 +80,7 @@ user_supervisor(ProcessStorage) ->
             user_supervisor(UpdatedProcessStorage);            
             
         {From, {get_user_data, ToUserName, UserPassword}} -> 
-            {ok, {UserRequestHandler, UpdatedProcessStorage}} =  on_request_received(From, ToUserName, ProcessStorage),
+            {ok, {UserRequestHandler, UpdatedProcessStorage}} =  supervisor_events:on_request_received(From, ToUserName, ProcessStorage),
             user_process:get_user_data(UserRequestHandler, ToUserName, UserPassword),
             user_supervisor(UpdatedProcessStorage);
 
@@ -88,8 +88,8 @@ user_supervisor(ProcessStorage) ->
             {ok, UpdatedProcessStorage} = on_response_received(From, on_user_data_received, Status, UserData, ProcessStorage),
             user_supervisor(UpdatedProcessStorage);
         
-        {From, {add_user_char_room, ToUserName, ChatRoomName}} ->
-            {ok, {UserRequestHandler, UpdatedProcessStorage}} =  on_request_received(From, ToUserName, ProcessStorage),
+        {From, {add_user_chat_room, ToUserName, ChatRoomName}} ->
+            {ok, {UserRequestHandler, UpdatedProcessStorage}} =  supervisor_events:on_request_received(From, ToUserName, ProcessStorage),
             user_process:add_chat_room_to_user(UserRequestHandler, ToUserName, ChatRoomName),
             user_supervisor(UpdatedProcessStorage);
 
@@ -100,17 +100,7 @@ user_supervisor(ProcessStorage) ->
             ok
         end.
 
-on_request_received(FromProcess, UserName, ProcessStorage) ->
-    {ok, {UserRequestHandler, ProcessStorageWithUserProcess}} = supervisor_process_storage:get_user_process_pid(UserName, ProcessStorage),
-    UpdatedProcessStorage = supervisor_process_storage:add_invoker(UserName, ProcessStorageWithUserProcess, FromProcess),
-    {ok, {UserRequestHandler, UpdatedProcessStorage}}.
 
-on_response_received(UserProcessPid, MessageAtom, Status, UserData, ProcessStorage) -> 
+on_response_received(ChildProcessPID, MessageAtom, Status, UserData, ProcessStorage) -> 
     #{user := UserName} = UserData,
-    on_response_received(UserProcessPid, MessageAtom, UserName, Status, UserData, ProcessStorage).    
-
-on_response_received(UserProcessPid, MessageAtom, UserName, Status, UserData, ProcessStorage) -> 
-    user_process:terminate(UserProcessPid),
-    Notification = {Status, {MessageAtom, UserData}},
-    supervisor_process_storage:notify_invokers(UserName, ProcessStorage, Notification),
-    supervisor_process_storage:remove_process_item(UserName, ProcessStorage).
+    supervisor_events:on_response_received(fun user_process:terminate/1, ChildProcessPID, MessageAtom, UserName, Status, UserData, ProcessStorage).    
